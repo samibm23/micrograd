@@ -1,3 +1,4 @@
+import math
 
 class Value:
     """ stores a single scalar value and its gradient """
@@ -41,7 +42,14 @@ class Value:
         out._backward = _backward
 
         return out
+    
+    def euler(self):
+        out = Value(math.exp(self.data), (self,), 'exp')
+        def _backward():
+            self.grad += out.data * out.grad
+        out._backward = _backward
 
+        return out
     def relu(self):
         out = Value(0 if self.data < 0 else self.data, (self,), 'ReLU')
 
@@ -50,7 +58,29 @@ class Value:
         out._backward = _backward
 
         return out
+    
+    def tanh(self):
+        e2 = self * 2
+        v = (e2.euler()-1)/(e2.euler()+1)
+        out = Value(v.data, (self,), 'tanh')
 
+        def _backward():
+            self.grad += (1 - (out.data)**2)*out.grad
+        out._backward = _backward
+
+        return out 
+
+    def sigmoid(self):
+        neg = -self
+        v = 1 / (neg.euler()+1)
+        out = Value(v.data, (self,), "Sigmoid")
+
+        def _backward():
+            self.grad+= (out.data * (1 - out.data)) * out.grad
+        out._backward = _backward
+
+        return out
+    
     def backward(self):
 
         # topological order all of the children in the graph
